@@ -2,6 +2,8 @@ import { error } from "./Hezarfen";
 import { Token } from "./Token";
 import { TokenType } from "./TokenType";
 
+import * as Utils from "./Utils";
+
 export class Lexer {
   private static keywords: Map<string, TokenType>;
   private source: string;
@@ -46,6 +48,7 @@ export class Lexer {
 
   private scanToken() {
     const char = this.advance();
+
     switch (char) {
       case "(":
         this.addToken(TokenType.LEFT_PAREN);
@@ -89,14 +92,11 @@ export class Lexer {
       case ">":
         this.addToken(this.match("=") ? TokenType.GREATER_EQUAL : TokenType.GREATER);
         break;
-
       case "/":
         if (this.match("/")) {
-          // A comment goes until the end of the line.
           while (this.peek() != "\n" && !this.isAtEnd()) this.advance();
-        } else {
-          this.addToken(TokenType.SLASH);
-        }
+        } else if (this.match("*")) this.blockComment();
+        else this.addToken(TokenType.SLASH);
         break;
 
       case " ":
@@ -113,9 +113,9 @@ export class Lexer {
         break;
 
       default:
-        if (this.isDigit(char)) {
+        if (Utils.isDigit(char)) {
           this.number();
-        } else if (this.isAlpha(char)) {
+        } else if (Utils.isAlpha(char)) {
           this.identifier();
         } else {
           error(this.line, "Unexpected character.");
@@ -125,7 +125,7 @@ export class Lexer {
   }
 
   private identifier(): void {
-    while (this.isAlphaNumeric(this.peek())) this.advance();
+    while (Utils.isAlphaNumeric(this.peek())) this.advance();
     const text = this.source.substring(this.start, this.current);
     let tokenType = Lexer.keywords.get(text);
     if (!tokenType) tokenType = TokenType.IDENTIFIER;
@@ -133,12 +133,12 @@ export class Lexer {
   }
 
   private number(): void {
-    while (this.isDigit(this.peek())) this.advance();
+    while (Utils.isDigit(this.peek())) this.advance();
 
     // CHECK IF NUMBER DECIMAL
-    if (this.peek() === "." && this.isDigit(this.peekNext())) {
+    if (this.peek() === "." && Utils.isDigit(this.peekNext())) {
       this.advance();
-      while (this.isDigit(this.peek())) this.advance();
+      while (Utils.isDigit(this.peek())) this.advance();
     }
 
     this.addToken(TokenType.NUMBER, parseFloat(this.source.substring(this.start, this.current)));
@@ -160,6 +160,22 @@ export class Lexer {
     }
   }
 
+  private blockComment(): void {
+    while (this.peek() !== "*" && this.peekNext() !== "/") {
+      if (this.peek() === "\n") this.line++;
+      this.advance();
+
+      if (this.isAtEnd()) {
+        error(this.line, "Unterminated string.");
+        return;
+      }
+      if (this.peek() === "*" && this.peekNext() === "/") {
+        this.advanceTwoSteps();
+        return;
+      }
+    }
+  }
+
   private match(expected: string): boolean {
     if (this.isAtEnd()) return false;
     if (this.source.charAt(this.current) !== expected) return false;
@@ -177,21 +193,13 @@ export class Lexer {
     return this.source.charAt(this.current + 1);
   }
 
-  private isAlpha(char: string): boolean {
-    return (char >= "a" && char <= "z") || (char >= "A" && char <= "Z") || char == "_";
-  }
-
-  private isAlphaNumeric(char: string): boolean {
-    return this.isAlpha(char) || this.isDigit(char);
-  }
-
-  private isDigit(char: string): boolean {
-    return char >= "0" && char <= "9";
-  }
-
   private advance(): string {
     this.current++;
     return this.source.charAt(this.current - 1);
+  }
+
+  private advanceTwoSteps(): void {
+    this.current = this.current + 2;
   }
 
   private addToken(type: TokenType, literal?: any): void {

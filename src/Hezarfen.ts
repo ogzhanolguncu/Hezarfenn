@@ -39,6 +39,7 @@ const runPrompt = () => {
 
   REPL.question("> ", (line) => {
     if (line == null) REPL.close();
+    if (line == "exit") REPL.close();
     run(line);
     hadError = false;
     REPL.close(); // Close REPL to avoid input being used again.
@@ -57,7 +58,7 @@ const run = (source: string) => {
 export const error = (number: number, message: string) => report(number, "", message);
 
 const report = (line: number, where: string, message: string) => {
-  console.log(chalk.bgYellow(`[line ${line}] Error ${where} : ${message}`));
+  console.log(chalk.yellowBright(`[line ${line}] Error ${where} : ${message}`));
   hadError = true;
 };
 
