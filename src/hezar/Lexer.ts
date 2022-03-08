@@ -1,5 +1,5 @@
 import { error } from "./Hezarfen";
-import { Token } from "./Token";
+import { Token, TokenLiteral } from "./Token";
 import { TokenType } from "./TokenType";
 
 import * as Utils from "./Utils";
@@ -145,18 +145,20 @@ export class Lexer {
   }
 
   private string(): void {
-    while (this.peek() !== '"' && !this.isAtEnd()) {
-      if (this.peek() === "\n") this.line++;
+    while (this.peek() != '"' && !this.isAtEnd()) {
+      if (this.peek() === '\n') this.line++;
+      this.advance();
+    }
+
+    if (this.isAtEnd()) {
+      error(this.line, "Unterminated string!");
+
+    } else {
+      // The closing '"'
       this.advance();
 
-      if (this.isAtEnd()) {
-        error(this.line, "Unterminated string.");
-        return;
-      }
-      this.advance();
-
-      const value = this.source.substring(this.start + 1, this.current - 1);
-      this.addToken(TokenType.STRING, value);
+      const val = this.source.substring(this.start + 1, this.current - 1);
+      this.addToken(TokenType.STRING, val);
     }
   }
 
@@ -202,7 +204,9 @@ export class Lexer {
     this.current = this.current + 2;
   }
 
-  private addToken(type: TokenType, literal?: any): void {
+  private addToken(type: TokenType, literal?: TokenLiteral): void {
+    literal = literal === undefined ? null : literal;
+
     const text = this.source.substring(this.start, this.current);
     this.tokens.push(new Token(type, text, literal, this.line));
   }
