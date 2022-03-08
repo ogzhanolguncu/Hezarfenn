@@ -1,4 +1,4 @@
-import { error } from "./Hezarfen";
+import { Hezarfen } from "./Hezarfen";
 import { Token, TokenLiteral } from "./Token";
 import { TokenType } from "./TokenType";
 
@@ -118,7 +118,7 @@ export class Lexer {
         } else if (Utils.isAlpha(char)) {
           this.identifier();
         } else {
-          error(this.line, "Unexpected character.");
+          Hezarfen.error(this.line, "Unexpected character.");
         }
         break;
     }
@@ -126,8 +126,10 @@ export class Lexer {
 
   private identifier(): void {
     while (Utils.isAlphaNumeric(this.peek())) this.advance();
+
     const text = this.source.substring(this.start, this.current);
     let tokenType = Lexer.keywords.get(text);
+
     if (!tokenType) tokenType = TokenType.IDENTIFIER;
     this.addToken(TokenType.IDENTIFIER);
   }
@@ -146,13 +148,12 @@ export class Lexer {
 
   private string(): void {
     while (this.peek() != '"' && !this.isAtEnd()) {
-      if (this.peek() === '\n') this.line++;
+      if (this.peek() === "\n") this.line++;
       this.advance();
     }
 
     if (this.isAtEnd()) {
-      error(this.line, "Unterminated string!");
-
+      Hezarfen.error(this.line, "Unterminated string!");
     } else {
       // The closing '"'
       this.advance();
@@ -168,7 +169,7 @@ export class Lexer {
       this.advance();
 
       if (this.isAtEnd()) {
-        error(this.line, "Unterminated string.");
+        Hezarfen.error(this.line, "Unterminated string.");
         return;
       }
       if (this.peek() === "*" && this.peekNext() === "/") {
