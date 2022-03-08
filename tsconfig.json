@@ -29,12 +29,9 @@
     "noEmitHelpers": false,
 
     "outDir": "dist",
-    "rootDir": "src",
+    "rootDir": ".",
     "baseUrl": "."
   },
-  "exclude": [
-    "dist",
-    "node_modules"
-  ],
-  "include": ["src"]
+  "exclude": ["dist", "node_modules"],
+  "include": ["src", "tool"]
 }
