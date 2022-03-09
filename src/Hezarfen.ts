@@ -5,6 +5,8 @@ import chalk from "chalk";
 
 import { Lexer } from "./Lexer";
 import { Token } from "./Token";
+import { Parser } from "./Parser";
+import { AstPrinter } from "./AstPrinter";
 
 const asyncReadFile = util.promisify(readFile);
 
@@ -46,14 +48,21 @@ export class Hezarfen {
   private static run(source: string): void {
     const lexer = new Lexer(source);
     const tokens: Token[] = lexer.scanTokens();
-    for (const token of tokens) {
-      console.log(chalk.greenBright(token));
+    const parser = new Parser(tokens);
+    const expression = parser.parse();
+
+    if (hadError) return;
+
+    if (expression === null) {
+      console.log(chalk.redBright("Internal Error"));
+    } else {
+      console.log(chalk.greenBright(new AstPrinter().print(expression)));
     }
   }
 
-  public static error = (number: number, message: string) => this.report(number, "", message);
+  public static error = (number: number | Token, message: string) => this.report(number, "", message);
 
-  public static report = (line: number, where: string, message: string) => {
+  public static report = (line: number | Token, where: string, message: string) => {
     console.log(chalk.yellowBright(`[line ${line}] Error ${where} : ${message}`));
     hadError = true;
   };

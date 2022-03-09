@@ -2,7 +2,7 @@
   "name": "hezarr-lang",
   "main": "dist/index.js",
   "scripts": {
-    "start": "ts-node-dev --respawn --transpile-only --ignore-watch node_modules --no-notify src/Hezarfen.ts",
+    "start": "ts-node-dev src/Hezarfen.ts",
     "build": "tsc --project tsconfig.build.json",
     "lint": "eslint --ext .ts,.js .",
     "format": "prettier \"src/**\" --write --ignore-unknown"
