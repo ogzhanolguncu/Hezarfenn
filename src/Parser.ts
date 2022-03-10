@@ -5,7 +5,6 @@ import { TokenType } from "./TokenType";
 
 /* 
 CURRENT GRAMMAR
-
 expression → series ;
 series -> conditional (( "," ) conditional)
 conditional -> equality (( "?") expression) expression
@@ -15,8 +14,6 @@ term → factor ( ( "-" | "+" ) factor )* ;
 factor → unary ( ( "/" | "*" ) unary )* ;
 unary → ( "!" | "-" ) unary | primary ;
 primary → NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" ;
-
-
 */
 
 export class Parser {

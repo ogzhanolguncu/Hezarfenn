@@ -4,7 +4,7 @@ import { createWriteStream, WriteStream } from "fs";
 type ExpressionTypes = "Binary" | "Grouping" | "Literal" | "Ternary" | "Unary"
 
 const main = () => {
-    defineAst('../hezar', "Expr", {
+    defineAst('./src', "Expr", {
         "Binary": "left: Expr , operator: Token, right: Expr",
         "Grouping": "expression: Expr",
         "Literal": "value: TokenLiteral",

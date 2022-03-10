@@ -6,13 +6,16 @@ import chalk from "chalk";
 import { Lexer } from "./Lexer";
 import { Token } from "./Token";
 import { Parser } from "./Parser";
-import { AstPrinter } from "./AstPrinter";
 import { TokenType } from "./TokenType";
+import { RuntimeError } from "./RuntimeException";
+import { Interpreter } from "./Interpreter";
 
 const asyncReadFile = util.promisify(readFile);
 
 export class Hezarfen {
+  private static interpreter = new Interpreter()
   public static hadError = false;
+  public static hadRuntimeError = false;
 
   public static async runFile(path: string) {
     try {
@@ -20,6 +23,7 @@ export class Hezarfen {
       Hezarfen.run(scriptFile);
 
       if (this.hadError) process.exit(65);
+      if (this.hadRuntimeError) process.exit(70);
     } catch (error) {
       console.log(chalk.bgRed("Something went wrong while reading the script file.", error));
       process.exit(65);
@@ -48,7 +52,7 @@ export class Hezarfen {
   private static run(source: string): void {
     const lexer = new Lexer(source);
     const tokens: Token[] = lexer.scanTokens();
-    const parser = new Parser(tokens);
+    const parser = new Parser([...tokens]);
     const expression = parser.parse();
 
     if (this.hadError) return;
@@ -56,7 +60,8 @@ export class Hezarfen {
     if (expression === null) {
       console.log(chalk.redBright("Internal Error"));
     } else {
-      console.log(chalk.greenBright(new AstPrinter().print(expression)));
+      Hezarfen.interpreter.interpreter(expression)
+      // console.log(chalk.greenBright(new AstPrinter().print(expression)));
     }
   }
 
@@ -71,6 +76,12 @@ export class Hezarfen {
       }
     }
   }
+
+  static runtimeError(error: RuntimeError) {
+    console.error(chalk.redBright(`${error.message} \n [line ${error.token.line}]`));
+    this.hadError = true;
+  }
+
   public static report(line: number, where: string, message: string): void {
     const msg = `[line ${line}] Error${where}: ${message}`;
     console.error(chalk.redBright(msg));
