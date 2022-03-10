@@ -7,10 +7,10 @@ import { Lexer } from "./Lexer";
 import { Token } from "./Token";
 import { Parser } from "./Parser";
 import { AstPrinter } from "./AstPrinter";
+import { TokenType } from "./TokenType";
 
 const asyncReadFile = util.promisify(readFile);
 
-let hadError = false;
 export class Hezarfen {
   public static hadError = false;
 
@@ -19,7 +19,7 @@ export class Hezarfen {
       const scriptFile = await asyncReadFile(path, "utf-8");
       Hezarfen.run(scriptFile);
 
-      if (hadError) process.exit(65);
+      if (this.hadError) process.exit(65);
     } catch (error) {
       console.log(chalk.bgRed("Something went wrong while reading the script file.", error));
       process.exit(65);
@@ -51,7 +51,7 @@ export class Hezarfen {
     const parser = new Parser(tokens);
     const expression = parser.parse();
 
-    if (hadError) return;
+    if (this.hadError) return;
 
     if (expression === null) {
       console.log(chalk.redBright("Internal Error"));
@@ -60,12 +60,23 @@ export class Hezarfen {
     }
   }
 
-  public static error = (number: number | Token, message: string) => this.report(number, "", message);
+  public static error(token: Token | number, message: string): void {
+    if (typeof token === 'number') {
+      this.report(token, "", message);
+    } else {
+      if (token.type === TokenType.EOF) {
+        this.report(token.line, " at end", message);
+      } else {
+        this.report(token.line, ` at '${token.lexeme}'`, message);
+      }
+    }
+  }
+  public static report(line: number, where: string, message: string): void {
+    const msg = `[line ${line}] Error${where}: ${message}`;
+    console.error(chalk.redBright(msg));
 
-  public static report = (line: number | Token, where: string, message: string) => {
-    console.log(chalk.yellowBright(`[line ${line}] Error ${where} : ${message}`));
-    hadError = true;
-  };
+    this.hadError = true;
+  }
 }
 
 (function main() {

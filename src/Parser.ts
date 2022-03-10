@@ -40,11 +40,11 @@ export class Parser {
   }
 
   private series(): Expr {
-    let expr = this.conditional();
+    let expr: Expr = this.conditional();
 
     while (this.match(TokenType.COMMA)) {
-      const operator = this.previous();
-      const right = this.conditional();
+      const operator: Token = this.previous();
+      const right: Expr = this.conditional();
       expr = new Binary(expr, operator, right);
     }
 
@@ -52,13 +52,13 @@ export class Parser {
   }
 
   private conditional(): Expr {
-    let expr = this.equality();
+    let expr: Expr = this.equality();
 
     if (this.match(TokenType.QUESTION)) {
-      const question = this.previous();
-      const middle = this.expression();
+      const question: Token = this.previous();
+      const middle: Expr = this.expression();
       this.consume(TokenType.COLON, "Expect ':' after expression.");
-      const right = this.expression();
+      const right: Expr = this.expression();
       expr = new Ternary(question, expr, middle, right);
     }
 
@@ -66,7 +66,7 @@ export class Parser {
   }
 
   private equality(): Expr {
-    let expr = this.comparison();
+    let expr: Expr = this.comparison();
 
     while (this.match(TokenType.BANG_EQUAL, TokenType.EQUAL_EQUAL)) {
       const operator: Token = this.previous();
@@ -76,6 +76,7 @@ export class Parser {
 
     return expr;
   }
+
 
   private comparison(): Expr {
     let expr: Expr = this.term();
@@ -122,19 +123,23 @@ export class Parser {
     return this.primary();
   }
 
-  private primary() {
-    if (this.match(TokenType.FALSE)) return new Literal(false);
-    if (this.match(TokenType.TRUE)) return new Literal(true);
-    if (this.match(TokenType.NIL)) return new Literal(null);
+  private primary(): Expr {
+    if (this.match(TokenType.FALSE))
+      return new Literal(false);
+    if (this.match(TokenType.TRUE))
+      return new Literal(true);
+    if (this.match(TokenType.NIL))
+      return new Literal(null);
     if (this.match(TokenType.NUMBER, TokenType.STRING)) {
       return new Literal(this.previous().literal);
+
     }
     if (this.match(TokenType.LEFT_PAREN)) {
       const expr: Expr = this.expression();
       this.consume(TokenType.RIGHT_PAREN, "Expect ')' after expression.");
       return new Grouping(expr);
     }
-    throw Hezarfen.error(this.peek(), "Expect expression");
+    throw this.error(this.peek(), "Expect expression");
   }
 
   private match(...types: TokenType[]): boolean {
@@ -150,7 +155,7 @@ export class Parser {
   private consume(type: TokenType, message: string) {
     if (this.check(type)) return this.advance();
 
-    throw Hezarfen.error(this.peek(), message);
+    throw this.error(this.peek(), message);
   }
 
   private check(type: TokenType): boolean {
@@ -172,15 +177,21 @@ export class Parser {
   }
 
   private peek(): Token {
-    return this.tokens.at(this.current) || new Token(TokenType.EOF, "", "", 0);
+    return this.tokens[this.current];
   }
+
+  private error(token: Token, message: string) {
+    Hezarfen.error(token, message);
+    return new Error();
+  }
+
 
   private synchronize(): void {
     this.advance();
 
     while (!this.isAtEnd()) {
       // END OF LINE
-      if (this.previous().type == TokenType.SEMICOLON) return;
+      if (this.previous().type === TokenType.SEMICOLON) return;
     }
 
     switch (this.peek().type) {
