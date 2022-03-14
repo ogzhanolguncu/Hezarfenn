@@ -76,6 +76,10 @@ export class Interpreter implements Visitor<InterpreterVisitorType> {
                 this.checkNumberOperands(expr.operator, left, right);
                 return Number(left) - Number(right);
             case TokenType.PLUS:
+                if ((typeof left === "string" && typeof right === "number")
+                    || (typeof left === "number" && typeof right === "string")) {
+                    return this.stringify(left) + this.stringify(right);
+                }
                 if (typeof left === "number" && typeof right === "number") {
                     return Number(left) + Number(right);
                 }
@@ -89,6 +93,8 @@ export class Interpreter implements Visitor<InterpreterVisitorType> {
             case TokenType.STAR:
                 this.checkNumberOperands(expr.operator, left, right);
                 return Number(left) * Number(right);
+            case TokenType.COMMA: // TODO: Check here for future implementations.
+                return right;
             case TokenType.GREATER:
                 this.checkNumberOperands(expr.operator, left, right);
                 return Number(left) > Number(right);

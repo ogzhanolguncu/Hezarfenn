@@ -3,6 +3,7 @@ import { Hezarfen } from "./Hezarfen";
 import { Token } from "./Token";
 import { TokenType } from "./TokenType";
 
+
 /* 
 CURRENT GRAMMAR
 expression → series ;
