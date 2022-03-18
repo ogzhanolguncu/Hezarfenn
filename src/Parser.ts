@@ -12,8 +12,8 @@ statement     -> exprStmt | printStmt
 varDecl       -> "var" IDENTIFIER ( "=" expression )? ";"
 exprStmt      -> expression ";"
 printStmt     -> "print" expression
-expression    -> series | assignment
-assigment     -> IDENTIFIER "=" assignment | equality
+expression    -> assignment
+assigment     -> IDENTIFIER "=" assignment | series
 series        -> conditional (( "," ) conditional)
 conditional   -> equality (( "?") expression) expression
 equality      -> comparison ( ( "!=" | "==" ) comparison )* 

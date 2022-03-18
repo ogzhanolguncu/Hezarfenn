@@ -1,3 +1,4 @@
-print "one";
-print true;
-print 2 + 1;
+var a = 3 > 4 ? "John" : "Smith";
+print a;
+a = 6;
+print a;
