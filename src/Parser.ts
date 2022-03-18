@@ -1,20 +1,27 @@
-import { Binary, Expr, Grouping, Literal, Ternary, Unary } from "./Expr";
+import { Binary, Expr, Grouping, Literal, Ternary, Unary, Variable } from "./Expr";
 import { Hezarfen } from "./Hezarfen";
+import { Expression, Print, Var } from "./Stmt";
 import { Token } from "./Token";
 import { TokenType } from "./TokenType";
-
+import { CombinedStatements } from "./Utils";
 
 /* 
-CURRENT GRAMMAR
-expression → series ;
+GRAMMAR
+program -> declaration * EOF
+declaration -> varDecl | statement;
+statement -> exprStmt | printStmt
+varDecl -> "var" IDENTIFIER ( "=" expression )? ";"
+exprStmt -> expression ";"
+printStmt -> "print" expression
+expression → series 
 series -> conditional (( "," ) conditional)
 conditional -> equality (( "?") expression) expression
-equality → comparison ( ( "!=" | "==" ) comparison )* ;
-comparison → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
-term → factor ( ( "-" | "+" ) factor )* ;
-factor → unary ( ( "/" | "*" ) unary )* ;
-unary → ( "!" | "-" ) unary | primary ;
-primary → NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" ;
+equality → comparison ( ( "!=" | "==" ) comparison )* 
+comparison → term ( ( ">" | ">=" | "<" | "<=" ) term )* 
+term → factor ( ( "-" | "+" ) factor )* 
+factor → unary ( ( "/" | "*" ) unary )* 
+unary → ( "!" | "-" ) unary | primary 
+primary → NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" | IDENTIFIER 
 */
 
 export class Parser {
@@ -26,11 +33,56 @@ export class Parser {
   }
 
   parse() {
+    const statements: CombinedStatements[] = []
     try {
-      return this.expression();
+      while (!this.isAtEnd()) {
+        statements.push(this.decleration())
+      }
+      return statements;
     } catch (error) {
-      return null;
+      return null
     }
+  }
+
+
+  private decleration(): CombinedStatements {
+    try {
+      if (this.match(TokenType.VAR)) return this.varDeclaration();
+      return this.statement();
+    } catch (error) {
+      this.synchronize();
+      return new Expression(new Literal(null));
+    }
+  }
+
+  private varDeclaration(): CombinedStatements {
+    const name: Token = this.consume(TokenType.IDENTIFIER, "Expect variable name.");
+
+    let initializer: Expr = new Literal(null)
+    if (this.match(TokenType.EQUAL)) {
+      initializer = this.expression();
+    }
+    this.consume(TokenType.SEMICOLON, "Expect ';' after variable declaration")
+    return new Var(name, initializer)
+
+  }
+
+
+  private statement(): CombinedStatements {
+    if (this.match(TokenType.PRINT)) return this.printStatement();
+    return this.expressionStatement();
+  }
+
+  private printStatement(): CombinedStatements {
+    const value: Expr = this.expression();
+    this.consume(TokenType.SEMICOLON, "Expect ';' after value.");
+    return new Print(value);
+  }
+
+  private expressionStatement(): CombinedStatements {
+    const expr: Expr = this.expression();
+    this.consume(TokenType.SEMICOLON, "Expect ';' after expression")
+    return new Expression(expr);
   }
 
   private expression(): Expr {
@@ -130,7 +182,9 @@ export class Parser {
       return new Literal(null);
     if (this.match(TokenType.NUMBER, TokenType.STRING)) {
       return new Literal(this.previous().literal);
-
+    }
+    if (this.match(TokenType.IDENTIFIER)) {
+      return new Variable(this.previous());
     }
     if (this.match(TokenType.LEFT_PAREN)) {
       const expr: Expr = this.expression();

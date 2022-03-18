@@ -1,27 +1,54 @@
 import { createWriteStream, WriteStream } from "fs";
 
 
-type ExpressionTypes = "Binary" | "Grouping" | "Literal" | "Ternary" | "Unary"
+type StatementTypes = "Expression" | "Print" | "Var"
+type ExpressionTypes = "Binary" | "Grouping" | "Literal" | "Ternary" | "Unary" | "Variable"
+
+type CombinedTypes = {
+    "Binary": ExpressionTypes,
+    "Grouping": ExpressionTypes,
+    "Literal": ExpressionTypes,
+    "Ternary": ExpressionTypes,
+    "Unary": ExpressionTypes
+    "Variable": ExpressionTypes
+    "Expression": StatementTypes
+    "Print": StatementTypes
+    "Var": StatementTypes
+}
+
 
 const main = () => {
-    defineAst('./src', "Expr", {
+    defineAst('../src', "Expr", {
         "Binary": "left: Expr , operator: Token, right: Expr",
         "Grouping": "expression: Expr",
         "Literal": "value: TokenLiteral",
         "Ternary": "operator: Token, left: Expr, middle: Expr, right: Expr",
-        "Unary": "operator: Token, right: Expr"
+        "Unary": "operator: Token, right: Expr",
+        "Variable": "name: Token"
+    });
+
+    defineAst('../src', "Stmt", {
+        "Expression": "expression: Expr",
+        "Print": "expression: Expr",
+        "Var": "name: Token, initializer: Expr"
     });
 };
 
-const defineAst = async (outputDir: string, fileName: string, exprList: { [Key in ExpressionTypes]: string }) => {
+const defineAst = async (outputDir: string, fileName: "Expr" | "Stmt", exprList: { [Key in keyof Partial<CombinedTypes>]: string }) => {
     const path = `${outputDir}/${fileName}.ts`
 
     const writeStream = createWriteStream(path, { flags: 'a' })
-    writeStream.write("import { Token, TokenLiteral } from './Token'" + "\r\n");
+    writeStream.write(`import { Token ${fileName !== "Stmt" ? ", TokenLiteral" : ""}} from './Token'\r\n`);
+    if (fileName === "Stmt") writeStream.write(`import { CombinedStatements } from './Utils'\r\n`);
     writeStream.write("\r\n");
 
     defineVisitor(writeStream, fileName, exprList);
-    writeStream.write(`export type Expr = ${Object.keys(exprList).join(' | ')}; \r\n`);
+    if (fileName === "Stmt") {
+        writeStream.write(`export type Expr = CombinedStatements \r\n`);
+    }
+    if (fileName === "Expr") {
+        writeStream.write(`export type Expr = ${Object.keys(exprList).join(' | ')}; \r\n`);
+    }
 
     // The AST classes.
     for (const [className, field] of Object.entries(exprList)) {
@@ -31,7 +58,7 @@ const defineAst = async (outputDir: string, fileName: string, exprList: { [Key i
 }
 
 
-const defineVisitor = (writeStream: WriteStream, fileName: string, exprList: { [Key in ExpressionTypes]: string }) => {
+const defineVisitor = (writeStream: WriteStream, fileName: "Expr" | "Stmt", exprList: { [Key in keyof Partial<CombinedTypes>]: string }) => {
     writeStream.write("export interface Visitor<T> {" + "\r\n");
     for (const [className] of Object.entries(exprList)) {
         writeStream.write("    visit" + className + fileName + ": (" + fileName.toLowerCase() + ":" + className + ") => T;" + "\r\n");
@@ -39,7 +66,7 @@ const defineVisitor = (writeStream: WriteStream, fileName: string, exprList: { [
     writeStream.write("  }" + "\r\n");
 }
 
-function defineType(writeStream: WriteStream, fileName: string, className: string, fieldList: string) {
+function defineType(writeStream: WriteStream, fileName: "Expr" | "Stmt", className: string, fieldList: string) {
     writeStream.write(`export class ${className} { \r\n`);
     const fields = fieldList.split(',');
     //Variable Decleration
