@@ -1,20 +1,3 @@
-import { Binary, Grouping, Literal, Ternary, Unary, Variable } from "./Expr";
-import { Expression, Print, Var } from "./Stmt";
-
-export type CombinedStatements = Expression | Print | Var | Binary | Grouping | Literal | Ternary | Unary | Variable
-
-export interface Visitor<T> {
-  visitBinaryExpr: (expr: Binary) => T;
-  visitGroupingExpr: (expr: Grouping) => T;
-  visitLiteralExpr: (expr: Literal) => T;
-  visitTernaryExpr: (expr: Ternary) => T;
-  visitVariableExpr: (expr: Variable) => T;
-  visitUnaryExpr: (expr: Unary) => T;
-  visitExpressionStmt: (stmt: Expression) => T;
-  visitPrintStmt: (stmt: Print) => T;
-  visitVarStmt: (stmt: Var) => T;
-}
-
 const isAlpha = (char: string): boolean => {
   return (char >= "a" && char <= "z") || (char >= "A" && char <= "Z") || char == "_";
 };

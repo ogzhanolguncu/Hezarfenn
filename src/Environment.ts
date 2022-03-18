@@ -2,17 +2,26 @@ import { RuntimeError } from "./RuntimeException";
 import { Token, TokenLiteral } from "./Token";
 
 export class Environment {
-    private static values: Map<string, TokenLiteral>;
+  private values: Map<string, TokenLiteral> = new Map();
+  public enclosing?: Environment;
 
-    public get(name: Token): any {
-        if (Environment.values.has(name.lexeme)) {
-            return Environment.values.get(name.lexeme)
-        }
+  public get(name: Token): TokenLiteral {
+    const value = this.values.has(name.lexeme) ? this.values.get(name.lexeme) : undefined;
 
-        throw new RuntimeError(name, `Undefined variable ${name.lexeme}.`)
+    if (value !== undefined) return value;
+    else if (this.enclosing) return this.enclosing.get(name);
+    else throw new RuntimeError(name, `Undefined variable '${name.lexeme}'.`);
+  }
+
+  public define(name: string, value: TokenLiteral): void {
+    this.values.set(name, value);
+  }
+
+  public assign(name: Token, value: TokenLiteral): void {
+    if (this.values.has(name.lexeme)) {
+      this.values.set(name.lexeme, value);
+      return;
     }
-
-    public define(name: string, value: TokenLiteral): void {
-        Environment.values.set(name, value)
-    }
+    throw new RuntimeError(name, "Undefined variable '" + name.lexeme + "'.");
+  }
 }

@@ -1,27 +1,27 @@
-import { Binary, Expr, Grouping, Literal, Ternary, Unary, Variable } from "./Expr";
+import chalk from "chalk";
+import { Assign, Binary, Expr, Grouping, Literal, Ternary, Unary, Variable } from "./Expr";
 import { Hezarfen } from "./Hezarfen";
-import { Expression, Print, Var } from "./Stmt";
+import { Expression, Print, Stmt, Var } from "./Stmt";
 import { Token } from "./Token";
 import { TokenType } from "./TokenType";
-import { CombinedStatements } from "./Utils";
-
 /* 
 GRAMMAR
-program -> declaration * EOF
-declaration -> varDecl | statement;
-statement -> exprStmt | printStmt
-varDecl -> "var" IDENTIFIER ( "=" expression )? ";"
-exprStmt -> expression ";"
-printStmt -> "print" expression
-expression → series 
-series -> conditional (( "," ) conditional)
-conditional -> equality (( "?") expression) expression
-equality → comparison ( ( "!=" | "==" ) comparison )* 
-comparison → term ( ( ">" | ">=" | "<" | "<=" ) term )* 
-term → factor ( ( "-" | "+" ) factor )* 
-factor → unary ( ( "/" | "*" ) unary )* 
-unary → ( "!" | "-" ) unary | primary 
-primary → NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" | IDENTIFIER 
+program       -> declaration * EOF
+declaration   -> varDecl | statement;
+statement     -> exprStmt | printStmt
+varDecl       -> "var" IDENTIFIER ( "=" expression )? ";"
+exprStmt      -> expression ";"
+printStmt     -> "print" expression
+expression    -> series | assignment
+assigment     -> IDENTIFIER "=" assignment | equality
+series        -> conditional (( "," ) conditional)
+conditional   -> equality (( "?") expression) expression
+equality      -> comparison ( ( "!=" | "==" ) comparison )* 
+comparison    -> term ( ( ">" | ">=" | "<" | "<=" ) term )* 
+term          -> factor ( ( "-" | "+" ) factor )* 
+factor        -> unary ( ( "/" | "*" ) unary )* 
+unary         -> ( "!" | "-" ) unary | primary 
+primary       -> NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" | IDENTIFIER 
 */
 
 export class Parser {
@@ -33,19 +33,19 @@ export class Parser {
   }
 
   parse() {
-    const statements: CombinedStatements[] = []
+    const statements: Stmt[] = [];
     try {
       while (!this.isAtEnd()) {
-        statements.push(this.decleration())
+        statements.push(this.decleration());
       }
       return statements;
-    } catch (error) {
-      return null
+    } catch (error: any) {
+      console.log(chalk.red("Intenal error."));
+      return error;
     }
   }
 
-
-  private decleration(): CombinedStatements {
+  private decleration(): Stmt {
     try {
       if (this.match(TokenType.VAR)) return this.varDeclaration();
       return this.statement();
@@ -55,38 +55,52 @@ export class Parser {
     }
   }
 
-  private varDeclaration(): CombinedStatements {
+  private varDeclaration(): Stmt {
     const name: Token = this.consume(TokenType.IDENTIFIER, "Expect variable name.");
 
-    let initializer: Expr = new Literal(null)
+    let initializer: Expr = new Literal(null);
     if (this.match(TokenType.EQUAL)) {
       initializer = this.expression();
     }
-    this.consume(TokenType.SEMICOLON, "Expect ';' after variable declaration")
-    return new Var(name, initializer)
-
+    this.consume(TokenType.SEMICOLON, "Expect ';' after variable declaration");
+    return new Var(name, initializer);
   }
 
-
-  private statement(): CombinedStatements {
+  private statement(): Stmt {
     if (this.match(TokenType.PRINT)) return this.printStatement();
     return this.expressionStatement();
   }
 
-  private printStatement(): CombinedStatements {
+  private printStatement(): Stmt {
     const value: Expr = this.expression();
     this.consume(TokenType.SEMICOLON, "Expect ';' after value.");
     return new Print(value);
   }
 
-  private expressionStatement(): CombinedStatements {
+  private expressionStatement(): Stmt {
     const expr: Expr = this.expression();
-    this.consume(TokenType.SEMICOLON, "Expect ';' after expression")
+    this.consume(TokenType.SEMICOLON, "Expect ';' after expression");
     return new Expression(expr);
   }
 
+  private assignment(): Expr {
+    const expr = this.series();
+
+    if (this.match(TokenType.EQUAL)) {
+      const equals = this.previous();
+      const value = this.assignment();
+
+      if (expr instanceof Variable) {
+        const name = expr.name;
+        return new Assign(name, value);
+      }
+      this.error(equals, "Invalid assignment target.");
+    }
+    return expr;
+  }
+
   private expression(): Expr {
-    return this.series();
+    return this.assignment();
   }
 
   private series(): Expr {
@@ -126,7 +140,6 @@ export class Parser {
 
     return expr;
   }
-
 
   private comparison(): Expr {
     let expr: Expr = this.term();
@@ -174,12 +187,9 @@ export class Parser {
   }
 
   private primary(): Expr {
-    if (this.match(TokenType.FALSE))
-      return new Literal(false);
-    if (this.match(TokenType.TRUE))
-      return new Literal(true);
-    if (this.match(TokenType.NIL))
-      return new Literal(null);
+    if (this.match(TokenType.FALSE)) return new Literal(false);
+    if (this.match(TokenType.TRUE)) return new Literal(true);
+    if (this.match(TokenType.NIL)) return new Literal(null);
     if (this.match(TokenType.NUMBER, TokenType.STRING)) {
       return new Literal(this.previous().literal);
     }
@@ -236,7 +246,6 @@ export class Parser {
     Hezarfen.error(token, message);
     return new Error();
   }
-
 
   private synchronize(): void {
     this.advance();

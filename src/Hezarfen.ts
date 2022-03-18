@@ -9,12 +9,12 @@ import { Parser } from "./Parser";
 import { TokenType } from "./TokenType";
 import { RuntimeError } from "./RuntimeException";
 import { Interpreter } from "./Interpreter";
-import { CombinedStatements } from "./Utils";
+import { Stmt } from "./Stmt";
 
 const asyncReadFile = util.promisify(readFile);
 
 export class Hezarfen {
-  private static interpreter = new Interpreter()
+  private static interpreter = new Interpreter();
   public static hadError = false;
   public static hadRuntimeError = false;
 
@@ -54,20 +54,20 @@ export class Hezarfen {
     const lexer = new Lexer(source);
     const tokens: Token[] = lexer.scanTokens();
     const parser = new Parser([...tokens]);
-    const statements: CombinedStatements[] = parser.parse();
+    const statements: Stmt[] = parser.parse();
 
     if (this.hadError) return;
 
     if (statements === null) {
       console.log(chalk.redBright("Internal Error"));
     } else {
-      Hezarfen.interpreter.interpreter(statements)
+      Hezarfen.interpreter.interpreter(statements);
       // console.log(chalk.greenBright(new AstPrinter().print(expression)));
     }
   }
 
   public static error(token: Token | number, message: string): void {
-    if (typeof token === 'number') {
+    if (typeof token === "number") {
       this.report(token, "", message);
     } else {
       if (token.type === TokenType.EOF) {
