@@ -1,8 +1,8 @@
 import { createWriteStream, WriteStream } from "fs";
 
 
-type StatementTypes = "Expression" | "Print"
-type ExpressionTypes = "Binary" | "Grouping" | "Literal" | "Ternary" | "Unary"
+type StatementTypes = "Expression" | "Print" | "Var"
+type ExpressionTypes = "Binary" | "Grouping" | "Literal" | "Ternary" | "Unary" | "Variable"
 
 type CombinedTypes = {
     "Binary": ExpressionTypes,
@@ -10,8 +10,10 @@ type CombinedTypes = {
     "Literal": ExpressionTypes,
     "Ternary": ExpressionTypes,
     "Unary": ExpressionTypes
+    "Variable": ExpressionTypes
     "Expression": StatementTypes
     "Print": StatementTypes
+    "Var": StatementTypes
 }
 
 
@@ -22,11 +24,13 @@ const main = () => {
         "Literal": "value: TokenLiteral",
         "Ternary": "operator: Token, left: Expr, middle: Expr, right: Expr",
         "Unary": "operator: Token, right: Expr",
+        "Variable": "name: Token"
     });
 
     defineAst('../src', "Stmt", {
         "Expression": "expression: Expr",
         "Print": "expression: Expr",
+        "Var": "name: Token, initializer: Expr"
     });
 };
 
