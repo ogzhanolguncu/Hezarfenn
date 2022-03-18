@@ -1,12 +1,6 @@
 import { Token, TokenLiteral } from './Token'
+import { Visitor } from './Utils';
 
-export interface Visitor<T> {
-  visitBinaryExpr: (expr: Binary) => T;
-  visitGroupingExpr: (expr: Grouping) => T;
-  visitLiteralExpr: (expr: Literal) => T;
-  visitTernaryExpr: (expr: Ternary) => T;
-  visitUnaryExpr: (expr: Unary) => T;
-}
 export type Expr = Binary | Grouping | Literal | Ternary | Unary;
 export class Binary {
   public left: Expr

@@ -25,7 +25,7 @@ const main = () => {
     });
 
     defineAst('../src', "Stmt", {
-        "Expression": "left: Expr , operator: Token, right: Expr",
+        "Expression": "expression: Expr",
         "Print": "expression: Expr",
     });
 };
@@ -35,10 +35,16 @@ const defineAst = async (outputDir: string, fileName: "Expr" | "Stmt", exprList:
 
     const writeStream = createWriteStream(path, { flags: 'a' })
     writeStream.write(`import { Token ${fileName !== "Stmt" ? ", TokenLiteral" : ""}} from './Token'\r\n`);
+    if (fileName === "Stmt") writeStream.write(`import { CombinedStatements } from './Utils'\r\n`);
     writeStream.write("\r\n");
 
     defineVisitor(writeStream, fileName, exprList);
-    writeStream.write(`export type Expr = ${Object.keys(exprList).join(' | ')}; \r\n`);
+    if (fileName === "Stmt") {
+        writeStream.write(`export type Expr = CombinedStatements \r\n`);
+    }
+    if (fileName === "Expr") {
+        writeStream.write(`export type Expr = ${Object.keys(exprList).join(' | ')}; \r\n`);
+    }
 
     // The AST classes.
     for (const [className, field] of Object.entries(exprList)) {

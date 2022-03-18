@@ -9,6 +9,7 @@ import { Parser } from "./Parser";
 import { TokenType } from "./TokenType";
 import { RuntimeError } from "./RuntimeException";
 import { Interpreter } from "./Interpreter";
+import { CombinedStatements } from "./Utils";
 
 const asyncReadFile = util.promisify(readFile);
 
@@ -25,7 +26,7 @@ export class Hezarfen {
       if (this.hadError) process.exit(65);
       if (this.hadRuntimeError) process.exit(70);
     } catch (error) {
-      console.log(chalk.bgRed("Something went wrong while reading the script file.", error));
+      console.log(chalk.red("Something went wrong while reading the script file.", error));
       process.exit(65);
     }
   }
@@ -53,14 +54,14 @@ export class Hezarfen {
     const lexer = new Lexer(source);
     const tokens: Token[] = lexer.scanTokens();
     const parser = new Parser([...tokens]);
-    const expression = parser.parse();
+    const statements: CombinedStatements[] = parser.parse();
 
     if (this.hadError) return;
 
-    if (expression === null) {
+    if (statements === null) {
       console.log(chalk.redBright("Internal Error"));
     } else {
-      Hezarfen.interpreter.interpreter(expression)
+      Hezarfen.interpreter.interpreter(statements)
       // console.log(chalk.greenBright(new AstPrinter().print(expression)));
     }
   }

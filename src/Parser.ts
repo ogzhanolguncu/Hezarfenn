@@ -1,8 +1,9 @@
 import { Binary, Expr, Grouping, Literal, Ternary, Unary } from "./Expr";
 import { Hezarfen } from "./Hezarfen";
+import { Expression, Print } from "./Stmt";
 import { Token } from "./Token";
 import { TokenType } from "./TokenType";
-
+import { CombinedStatements } from "./Utils";
 
 /* 
 GRAMMAR
@@ -30,11 +31,28 @@ export class Parser {
   }
 
   parse() {
-    try {
-      return this.expression();
-    } catch (error) {
-      return null;
+    const statements: CombinedStatements[] = []
+    while (!this.isAtEnd()) {
+      statements.push(this.statement())
     }
+    return statements;
+  }
+
+  private statement(): CombinedStatements {
+    if (this.match(TokenType.PRINT)) return this.printStatement();
+    return this.expressionStatement();
+  }
+
+  private printStatement(): CombinedStatements {
+    const value: Expr = this.expression();
+    this.consume(TokenType.SEMICOLON, "Expect ';' after value.");
+    return new Print(value);
+  }
+
+  private expressionStatement(): CombinedStatements {
+    const expr: Expr = this.expression();
+    this.consume(TokenType.SEMICOLON, "Expect ';' after expression")
+    return new Expression(expr);
   }
 
   private expression(): Expr {

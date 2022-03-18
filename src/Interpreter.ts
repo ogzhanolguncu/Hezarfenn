@@ -1,18 +1,22 @@
 /* eslint-disable @typescript-eslint/ban-types */
-import { Grouping, Literal, Visitor, Expr, Unary, Binary, Ternary } from "./Expr";
+import chalk from "chalk";
+import { Grouping, Literal, Expr, Unary, Binary, Ternary } from "./Expr";
 import { Hezarfen } from "./Hezarfen";
 import { RuntimeError } from "./RuntimeException";
+import { Expression, Print } from "./Stmt";
 import { Token, TokenLiteral } from "./Token";
 import { TokenType } from "./TokenType";
+import { CombinedStatements, Visitor } from "./Utils";
 
 type InterpreterVisitorType = TokenLiteral | Object
 
 export class Interpreter implements Visitor<InterpreterVisitorType> {
 
-    interpreter(expression: Expr): void {
+    interpreter(statements: CombinedStatements[]): void {
         try {
-            const value = this.evaluate(expression)
-            console.log(this.stringify(value));
+            for (const statement of statements) {
+                this.execute(statement);
+            }
         } catch (error: any) {
             Hezarfen.runtimeError(error);
         }
@@ -138,10 +142,23 @@ export class Interpreter implements Visitor<InterpreterVisitorType> {
         throw new RuntimeError(operator, "Operands must be numbers.");
     }
 
-
-
     private evaluate(expr: Expr): InterpreterVisitorType {
         return expr.accept(this)
+    }
+
+    private execute(stmt: CombinedStatements) {
+        stmt.accept(this);
+    }
+
+    public visitExpressionStmt(stmt: Expression) {
+        this.evaluate(stmt.expression);
+        return null;
+    }
+
+    public visitPrintStmt(stmt: Print) {
+        const value = this.evaluate(stmt.expression);
+        console.log(chalk.green(this.stringify(value)))
+        return null;
     }
 }
 
