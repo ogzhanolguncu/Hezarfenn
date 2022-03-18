@@ -1,7 +1,7 @@
-import { Binary, Grouping, Literal, Ternary, Unary } from "./Expr";
-import { Expression, Print } from "./Stmt";
+import { Binary, Grouping, Literal, Ternary, Unary, Variable } from "./Expr";
+import { Expression, Print, Var } from "./Stmt";
 
-export type CombinedStatements = Expression | Print | Binary | Grouping | Literal | Ternary | Unary
+export type CombinedStatements = Expression | Print | Var | Binary | Grouping | Literal | Ternary | Unary | Variable
 
 export interface Visitor<T> {
   visitBinaryExpr: (expr: Binary) => T;

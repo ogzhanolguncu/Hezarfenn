@@ -1,14 +1,16 @@
-import { Binary, Expr, Grouping, Literal, Ternary, Unary } from "./Expr";
+import { Binary, Expr, Grouping, Literal, Ternary, Unary, Variable } from "./Expr";
 import { Hezarfen } from "./Hezarfen";
-import { Expression, Print } from "./Stmt";
+import { Expression, Print, Var } from "./Stmt";
 import { Token } from "./Token";
 import { TokenType } from "./TokenType";
 import { CombinedStatements } from "./Utils";
 
 /* 
 GRAMMAR
-program -> statement * EOF
+program -> declaration * EOF
+declaration -> varDecl | statement;
 statement -> exprStmt | printStmt
+varDecl -> "var" IDENTIFIER ( "=" expression )? ";"
 exprStmt -> expression ";"
 printStmt -> "print" expression
 expression → series 
@@ -19,7 +21,7 @@ comparison → term ( ( ">" | ">=" | "<" | "<=" ) term )*
 term → factor ( ( "-" | "+" ) factor )* 
 factor → unary ( ( "/" | "*" ) unary )* 
 unary → ( "!" | "-" ) unary | primary 
-primary → NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" 
+primary → NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" | IDENTIFIER 
 */
 
 export class Parser {
@@ -32,11 +34,39 @@ export class Parser {
 
   parse() {
     const statements: CombinedStatements[] = []
-    while (!this.isAtEnd()) {
-      statements.push(this.statement())
+    try {
+      while (!this.isAtEnd()) {
+        statements.push(this.decleration())
+      }
+      return statements;
+    } catch (error) {
+      return null
     }
-    return statements;
   }
+
+
+  private decleration(): CombinedStatements {
+    try {
+      if (this.match(TokenType.VAR)) return this.varDeclaration();
+      return this.statement();
+    } catch (error) {
+      this.synchronize();
+      return new Expression(new Literal(null));
+    }
+  }
+
+  private varDeclaration(): CombinedStatements {
+    const name: Token = this.consume(TokenType.IDENTIFIER, "Expect variable name.");
+
+    let initializer: Expr = new Literal(null)
+    if (this.match(TokenType.EQUAL)) {
+      initializer = this.expression();
+    }
+    this.consume(TokenType.SEMICOLON, "Expect ';' after variable declaration")
+    return new Var(name, initializer)
+
+  }
+
 
   private statement(): CombinedStatements {
     if (this.match(TokenType.PRINT)) return this.printStatement();
@@ -152,7 +182,9 @@ export class Parser {
       return new Literal(null);
     if (this.match(TokenType.NUMBER, TokenType.STRING)) {
       return new Literal(this.previous().literal);
-
+    }
+    if (this.match(TokenType.IDENTIFIER)) {
+      return new Variable(this.previous());
     }
     if (this.match(TokenType.LEFT_PAREN)) {
       const expr: Expr = this.expression();
