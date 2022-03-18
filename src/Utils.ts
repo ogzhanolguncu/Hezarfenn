@@ -8,9 +8,11 @@ export interface Visitor<T> {
   visitGroupingExpr: (expr: Grouping) => T;
   visitLiteralExpr: (expr: Literal) => T;
   visitTernaryExpr: (expr: Ternary) => T;
+  visitVariableExpr: (expr: Variable) => T;
   visitUnaryExpr: (expr: Unary) => T;
   visitExpressionStmt: (stmt: Expression) => T;
   visitPrintStmt: (stmt: Print) => T;
+  visitVarStmt: (stmt: Var) => T;
 }
 
 const isAlpha = (char: string): boolean => {

@@ -1,17 +1,18 @@
 /* eslint-disable @typescript-eslint/ban-types */
 import chalk from "chalk";
-import { Grouping, Literal, Expr, Unary, Binary, Ternary } from "./Expr";
+import { Environment } from "./Environment";
+import { Grouping, Literal, Expr, Unary, Binary, Ternary, Variable } from "./Expr";
 import { Hezarfen } from "./Hezarfen";
 import { RuntimeError } from "./RuntimeException";
-import { Expression, Print } from "./Stmt";
+import { Expression, Print, Var } from "./Stmt";
 import { Token, TokenLiteral } from "./Token";
 import { TokenType } from "./TokenType";
 import { CombinedStatements, Visitor } from "./Utils";
 
-type InterpreterVisitorType = TokenLiteral | Object
+type InterpreterVisitorType = TokenLiteral
 
 export class Interpreter implements Visitor<InterpreterVisitorType> {
-
+    private environment: Environment = new Environment();
     interpreter(statements: CombinedStatements[]): void {
         try {
             for (const statement of statements) {
@@ -25,7 +26,7 @@ export class Interpreter implements Visitor<InterpreterVisitorType> {
     private stringify(object: InterpreterVisitorType): string {
         if (object === null) return "nil";
 
-        if (object instanceof Number) {
+        if (typeof object === "number") {
             let text = object.toString();
             if (text.endsWith(".0")) {
                 text = text.substring(0, text.length - 2)
@@ -67,6 +68,11 @@ export class Interpreter implements Visitor<InterpreterVisitorType> {
         }
         return null
     }
+
+    public visitVariableExpr(expr: Variable): InterpreterVisitorType {
+        return this.environment.get(expr.name);
+    }
+
 
     public visitBinaryExpr(expr: Binary): InterpreterVisitorType {
         const left = this.evaluate(expr.left);
@@ -126,7 +132,7 @@ export class Interpreter implements Visitor<InterpreterVisitorType> {
 
     private isTruthy(object: InterpreterVisitorType) {
         if (object === null) return false;
-        if (object instanceof Boolean) return Boolean(object);
+        if (typeof object === "boolean") return Boolean(object);
         return true;
     }
 
@@ -160,5 +166,14 @@ export class Interpreter implements Visitor<InterpreterVisitorType> {
         console.log(chalk.green(this.stringify(value)))
         return null;
     }
+
+    public visitVarStmt(stmt: Var) {
+        if (stmt.initializer !== null) {
+            const value = this.evaluate(stmt.initializer);
+            this.environment.define(stmt.name.lexeme, value);
+        }
+        return null
+    }
+
 }
 
