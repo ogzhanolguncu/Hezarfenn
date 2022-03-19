@@ -4,7 +4,7 @@ import { Environment } from "./Environment";
 import { Grouping, Literal, Expr, Unary, Binary, Ternary, Variable, Assign, Visitor as ExprVisitor } from "./Expr";
 import { Hezarfen } from "./Hezarfen";
 import { RuntimeError } from "./RuntimeException";
-import { Expression, Print, Stmt, Var, Visitor as StmtVisitor } from "./Stmt";
+import { Block, Expression, Print, Stmt, Var, Visitor as StmtVisitor } from "./Stmt";
 import { Token, TokenLiteral } from "./Token";
 import { TokenType } from "./TokenType";
 
@@ -12,6 +12,7 @@ type InterpreterVisitorType = TokenLiteral;
 
 export class Interpreter implements ExprVisitor<TokenLiteral>, StmtVisitor<void> {
   private environment: Environment = new Environment();
+
   interpreter(statements: Stmt[]): void {
     try {
       for (const statement of statements) {
@@ -158,6 +159,23 @@ export class Interpreter implements ExprVisitor<TokenLiteral>, StmtVisitor<void>
 
   private execute(stmt: Stmt) {
     stmt.accept(this);
+  }
+
+  private executeBlock(statements: Stmt[], environment: Environment) {
+    const previous = this.environment;
+    try {
+      this.environment = environment;
+      for (const statement of statements) {
+        this.execute(statement);
+      }
+    } catch (error) {
+      this.environment = previous;
+    }
+  }
+
+  public visitBlockStmt(stmt: Block) {
+    this.executeBlock(stmt.statements, new Environment(this.environment));
+    return null;
   }
 
   public visitExpressionStmt(stmt: Expression) {

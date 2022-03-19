@@ -1,14 +1,15 @@
 import chalk from "chalk";
 import { Assign, Binary, Expr, Grouping, Literal, Ternary, Unary, Variable } from "./Expr";
 import { Hezarfen } from "./Hezarfen";
-import { Expression, Print, Stmt, Var } from "./Stmt";
+import { Block, Expression, Print, Stmt, Var } from "./Stmt";
 import { Token } from "./Token";
 import { TokenType } from "./TokenType";
 /* 
 GRAMMAR
 program       -> declaration * EOF
 declaration   -> varDecl | statement;
-statement     -> exprStmt | printStmt
+statement     -> exprStmt | printStmt | block;
+block         -> "{" declaration* "}"
 varDecl       -> "var" IDENTIFIER ( "=" expression )? ";"
 exprStmt      -> expression ";"
 printStmt     -> "print" expression
@@ -68,6 +69,7 @@ export class Parser {
 
   private statement(): Stmt {
     if (this.match(TokenType.PRINT)) return this.printStatement();
+    if (this.match(TokenType.LEFT_BRACE)) return new Block(this.block());
     return this.expressionStatement();
   }
 
@@ -81,6 +83,16 @@ export class Parser {
     const expr: Expr = this.expression();
     this.consume(TokenType.SEMICOLON, "Expect ';' after expression");
     return new Expression(expr);
+  }
+
+  private block(): Stmt[] {
+    const statements: Stmt[] = [];
+    while (!this.check(TokenType.RIGHT_BRACE) && !this.isAtEnd()) {
+      statements.push(this.decleration());
+    }
+
+    this.consume(TokenType.RIGHT_BRACE, "Expect '}' after block.");
+    return statements;
   }
 
   private assignment(): Expr {

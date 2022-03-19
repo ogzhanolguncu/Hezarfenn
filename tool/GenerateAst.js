@@ -89,7 +89,12 @@ function defineAst(outDir, baseName, types, imports) {
   defineAst(
     outDir,
     "Stmt",
-    ["Expression : expression: Expr", "Print      : expression: Expr", "Var        : name: Token, initializer: Expr | null"],
+    [
+      "Block      : statements: Stmt[]",
+      "Expression : expression: Expr",
+      "Print      : expression: Expr",
+      "Var        : name: Token, initializer: Expr | null",
+    ],
     'import { Expr } from "./Expr";\nimport { Token } from "./Token"'
   );
 })();

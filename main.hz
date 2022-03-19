@@ -1,4 +1,6 @@
-var a = 3 > 4 ? "John" : "Smith";
+var a = 5;
 print a;
-a = 6;
-print a;
+{
+    var a = 8;
+    print a + 5;
+}
