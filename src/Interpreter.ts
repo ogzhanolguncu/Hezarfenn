@@ -185,6 +185,9 @@ export class Interpreter implements ExprVisitor<TokenLiteral>, StmtVisitor<void>
 
   public visitPrintStmt(stmt: Print) {
     const value = this.evaluate(stmt.expression);
+    if (value === null) {
+      throw new RuntimeError({ ...(stmt.expression as unknown as Var).name }, "Variable has not been initialized yet.");
+    }
     console.log(chalk.green(this.stringify(value)));
     return null;
   }
