@@ -1,20 +1,24 @@
 import chalk from "chalk";
-import { Assign, Binary, Expr, Grouping, Literal, Ternary, Unary, Variable } from "./Expr";
+import { Assign, Binary, Expr, Grouping, Literal, Logical, Ternary, Unary, Variable } from "./Expr";
 import { Hezarfen } from "./Hezarfen";
-import { Block, Expression, Print, Stmt, Var } from "./Stmt";
+import { Block, Expression, If, Print, Stmt, Var } from "./Stmt";
 import { Token } from "./Token";
 import { TokenType } from "./TokenType";
 /* 
 GRAMMAR
 program       -> declaration * EOF
 declaration   -> varDecl | statement;
-statement     -> exprStmt | printStmt | block;
+statement     -> exprStmt | ifStmt | printStmt | block;
+ifStmt        -> "if" "(" expression ")" statement
+                  ( "else" statement )?; 
 block         -> "{" declaration* "}"
 varDecl       -> "var" IDENTIFIER ( "=" expression )? ";"
 exprStmt      -> expression ";"
 printStmt     -> "print" expression
-expression    -> assignment
-assigment     -> IDENTIFIER "=" assignment | series
+expression    -> assignment;
+assigment     -> IDENTIFIER "=" assignment | logic_or | series;
+logic_or      -> logic_and ( "or" logic_and )*;
+logic_and     -> equality ("and" equality)*;
 series        -> conditional (( "," ) conditional)
 conditional   -> equality (( "?") expression) expression
 equality      -> comparison ( ( "!=" | "==" ) comparison )* 
@@ -73,6 +77,7 @@ export class Parser {
   }
 
   private statement(): Stmt {
+    if (this.match(TokenType.IF)) return this.ifStatement();
     if (this.match(TokenType.PRINT)) return this.printStatement();
     if (this.match(TokenType.LEFT_BRACE)) return new Block(this.block());
     return this.expressionStatement();
@@ -82,6 +87,20 @@ export class Parser {
     const value: Expr = this.expression();
     this.consume(TokenType.SEMICOLON, "Expect ';' after value.");
     return new Print(value);
+  }
+
+  private ifStatement(): Stmt {
+    this.consume(TokenType.LEFT_PAREN, "Expect '(' after 'if'.");
+    const condition: Expr = this.expression();
+    this.consume(TokenType.RIGHT_PAREN, "Expect ')' after if condition.")
+
+    const thenBranch: Stmt = this.statement();
+    let elseBranch = null;
+    if (this.match(TokenType.ELSE)) {
+      elseBranch = this.statement();
+    }
+
+    return new If(condition, thenBranch, elseBranch)
   }
 
   private expressionStatement(): Stmt {
@@ -101,7 +120,7 @@ export class Parser {
   }
 
   private assignment(): Expr {
-    const expr = this.series();
+    const expr = this.or();
 
     if (this.match(TokenType.EQUAL)) {
       const equals = this.previous();
@@ -116,6 +135,29 @@ export class Parser {
     return expr;
   }
 
+  private or(): Expr {
+    let expr: Expr = this.and();
+
+    while (this.match(TokenType.OR)) {
+      const operator: Token = this.previous();
+      const right: Expr = this.and();
+      expr = new Logical(expr, operator, right);
+    }
+
+    return expr;
+  }
+
+  private and(): Expr {
+    let expr = this.series();
+
+    while (this.match(TokenType.AND)) {
+      const operator: Token = this.previous();
+      const right: Expr = this.equality();
+      expr = new Logical(expr, operator, right);
+    }
+
+    return expr;
+  }
   private expression(): Expr {
     return this.assignment();
   }

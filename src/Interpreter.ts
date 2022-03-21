@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/ban-types */
 import chalk from "chalk";
 import { Environment } from "./Environment";
-import { Grouping, Literal, Expr, Unary, Binary, Ternary, Variable, Assign, Visitor as ExprVisitor } from "./Expr";
+import { Grouping, Literal, Expr, Unary, Binary, Ternary, Variable, Assign, Visitor as ExprVisitor, Logical } from "./Expr";
 import { Hezarfen } from "./Hezarfen";
 import { RuntimeError } from "./RuntimeException";
-import { Block, Expression, Print, Stmt, Var, Visitor as StmtVisitor } from "./Stmt";
+import { Block, Expression, If, Print, Stmt, Var, Visitor as StmtVisitor } from "./Stmt";
 import { Token, TokenLiteral } from "./Token";
 import { TokenType } from "./TokenType";
 
@@ -39,6 +39,19 @@ export class Interpreter implements ExprVisitor<TokenLiteral>, StmtVisitor<void>
   public visitLiteralExpr(expr: Literal): InterpreterVisitorType {
     return expr.value;
   }
+
+  public visitLogicalExpr(expr: Logical) {
+    const left = this.evaluate(expr.left);
+
+    if (expr.operator.type === TokenType.OR) {
+      if (this.isTruthy(left)) return left;
+    } else {
+      if (this.isTruthy(left)) return left;
+    }
+
+    return this.evaluate(expr.right);
+  }
+
 
   public visitGroupingExpr(expr: Grouping): InterpreterVisitorType {
     return this.evaluate(expr.expression);
@@ -180,6 +193,15 @@ export class Interpreter implements ExprVisitor<TokenLiteral>, StmtVisitor<void>
 
   public visitExpressionStmt(stmt: Expression) {
     this.evaluate(stmt.expression);
+    return null;
+  }
+
+  public visitIfStmt(stmt: If) {
+    if (this.isTruthy(this.evaluate(stmt.conditition))) {
+      this.execute(stmt.thenBranch);
+    } else if (stmt.elseBranch !== null) {
+      this.execute(stmt.elseBranch);
+    }
     return null;
   }
 

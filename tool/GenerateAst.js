@@ -79,8 +79,9 @@ function defineAst(outDir, baseName, types, imports) {
       "Binary   : left: Expr, operator: Token, right: Expr",
       "Grouping : expression: Expr",
       "Literal  : value: TokenLiteral",
+      "Logical  : left: Expr, operator: Token, right: Expr",
       "Unary    : operator: Token, right: Expr",
-      "Ternary : operator: Token, left: Expr, middle: Expr, right: Expr",
+      "Ternary  : operator: Token, left: Expr, middle: Expr, right: Expr",
       "Variable : name: Token",
     ],
     'import { Token, TokenLiteral } from "./Token"'
@@ -92,6 +93,7 @@ function defineAst(outDir, baseName, types, imports) {
     [
       "Block      : statements: Stmt[]",
       "Expression : expression: Expr",
+      "If         : conditition: Expr, thenBranch: Stmt, elseBranch: Stmt | null",
       "Print      : expression: Expr",
       "Var        : name: Token, initializer: Expr | null",
     ],
