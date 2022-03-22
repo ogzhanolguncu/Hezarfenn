@@ -40,17 +40,16 @@ export class Parser {
   parse() {
     const statements: Stmt[] = [];
     try {
-      if (!(this.peek().type === TokenType.VAR || this.peek().type === TokenType.PRINT)) {
-        statements.push(this.printStatement());
-        return statements;
-      }
-
+      // if (!(this.peek().type === TokenType.VAR || this.peek().type === TokenType.PRINT)) {
+      //   statements.push(this.printStatement());
+      //   return statements;
+      // }
       while (!this.isAtEnd()) {
         statements.push(this.decleration());
       }
       return statements;
     } catch (error: any) {
-      console.log(chalk.red("Intenal error."));
+      console.log(chalk.red("Internal error."));
       return error;
     }
   }

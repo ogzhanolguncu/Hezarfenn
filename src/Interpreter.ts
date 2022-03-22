@@ -45,10 +45,11 @@ export class Interpreter implements ExprVisitor<TokenLiteral>, StmtVisitor<void>
 
     if (expr.operator.type === TokenType.OR) {
       if (this.isTruthy(left)) return left;
-    } else {
-      if (this.isTruthy(left)) return left;
     }
-
+    if (expr.operator.type === TokenType.AND) {
+      if (this.isTruthy(left)) return left;
+      return false;
+    }
     return this.evaluate(expr.right);
   }
 

@@ -1,0 +1,4 @@
+if(6 > 5)
+    print "6 is greater than 5";
+else
+    print "5 is less than 6";
