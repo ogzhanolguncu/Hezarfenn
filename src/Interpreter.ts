@@ -1,10 +1,21 @@
 /* eslint-disable @typescript-eslint/ban-types */
 import chalk from "chalk";
 import { Environment } from "./Environment";
-import { Grouping, Literal, Expr, Unary, Binary, Ternary, Variable, Assign, Visitor as ExprVisitor, Logical } from "./Expr";
+import {
+  Grouping,
+  Literal,
+  Expr,
+  Unary,
+  Binary,
+  Ternary,
+  Variable,
+  Assign,
+  Visitor as ExprVisitor,
+  Logical,
+} from "./Expr";
 import { Hezarfen } from "./Hezarfen";
 import { RuntimeError } from "./RuntimeException";
-import { Block, Expression, If, Print, Stmt, Var, Visitor as StmtVisitor } from "./Stmt";
+import { Block, Expression, If, Print, Stmt, Var, Visitor as StmtVisitor, While } from "./Stmt";
 import { Token, TokenLiteral } from "./Token";
 import { TokenType } from "./TokenType";
 
@@ -53,12 +64,17 @@ export class Interpreter implements ExprVisitor<TokenLiteral>, StmtVisitor<void>
     return this.evaluate(expr.right);
   }
 
-
   public visitGroupingExpr(expr: Grouping): InterpreterVisitorType {
     return this.evaluate(expr.expression);
   }
 
-  // 5 ? 6 : 7
+  public visitWhileStmt(stmt: While): InterpreterVisitorType {
+    while (this.isTruthy(this.evaluate(stmt.condition))) {
+      this.execute(stmt.body);
+    }
+    return null;
+  }
+
   public visitTernaryExpr(expr: Ternary): InterpreterVisitorType {
     const left = this.evaluate(expr.left);
     const middle = this.evaluate(expr.middle);
