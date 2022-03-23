@@ -96,6 +96,7 @@ function defineAst(outDir, baseName, types, imports) {
       "If         : conditition: Expr, thenBranch: Stmt, elseBranch: Stmt | null",
       "Print      : expression: Expr",
       "Var        : name: Token, initializer: Expr | null",
+      "While      : condition: Expr, body: Stmt",
     ],
     'import { Expr } from "./Expr";\nimport { Token } from "./Token"'
   );
