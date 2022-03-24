@@ -3,6 +3,7 @@ import { Token, TokenLiteral } from "./Token";
 export interface Visitor<T> {
     visitAssignExpr: (Expr: Assign) => T;
     visitBinaryExpr: (Expr: Binary) => T;
+    visitCallExpr: (Expr: Call) => T;
     visitGroupingExpr: (Expr: Grouping) => T;
     visitLiteralExpr: (Expr: Literal) => T;
     visitLogicalExpr: (Expr: Logical) => T;
@@ -11,7 +12,7 @@ export interface Visitor<T> {
     visitVariableExpr: (Expr: Variable) => T;
 }
 
-export type Expr = Assign | Binary | Grouping | Literal | Logical | Unary | Ternary | Variable;
+export type Expr = Assign | Binary | Call | Grouping | Literal | Logical | Unary | Ternary | Variable;
 
 export class Assign {
     public name: Token;
@@ -40,6 +41,22 @@ export class Binary {
 
     public accept<T>(visitor: Visitor<T>): T {
         return visitor.visitBinaryExpr(this);
+    }
+}
+
+export class Call {
+    public callee: Expr;
+    public paren: Token;
+    public arguments: Expr[];
+
+    public constructor(callee: Expr, paren: Token, arguments: Expr[]) {
+        this.callee = callee;
+        this.paren = paren;
+        this.arguments = arguments;
+    }
+
+    public accept<T>(visitor: Visitor<T>): T {
+        return visitor.visitCallExpr(this);
     }
 }
 

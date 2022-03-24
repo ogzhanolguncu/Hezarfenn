@@ -1,5 +1,5 @@
 import chalk from "chalk";
-import { Assign, Binary, Expr, Grouping, Literal, Logical, Ternary, Unary, Variable } from "./Expr";
+import { Assign, Binary, Call, Expr, Grouping, Literal, Logical, Ternary, Unary, Variable } from "./Expr";
 import { Hezarfen } from "./Hezarfen";
 import { Block, Expression, If, Print, Stmt, Var, While } from "./Stmt";
 import { Token } from "./Token";
@@ -27,7 +27,9 @@ equality      -> comparison ( ( "!=" | "==" ) comparison )*
 comparison    -> term ( ( ">" | ">=" | "<" | "<=" ) term )* 
 term          -> factor ( ( "-" | "+" ) factor )* 
 factor        -> unary ( ( "/" | "*" ) unary )* 
-unary         -> ( "!" | "-" ) unary | primary 
+unary         -> ( "!" | "-" ) unary | call
+call          -> primary ( "(" arguments? ")" )*;
+arguments     -> expression ( "," expression)*;
 primary       -> NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" | IDENTIFIER 
 */
 
@@ -293,7 +295,36 @@ export class Parser {
       return new Unary(operator, right);
     }
 
-    return this.primary();
+    return this.call();
+  }
+
+  private finishCall(callee: Expr) {
+    const argumentsList = [];
+
+    if (!this.check(TokenType.RIGHT_PAREN)) {
+      do {
+        if (argumentsList.length >= 255) this.error(this.peek(), "Can't have more than 255 arguments.");
+        argumentsList.push(this.expression());
+      } while (this.match(TokenType.COMMA));
+    }
+
+    const paren = this.consume(TokenType.RIGHT_PAREN, "Expect ')' after arguments.");
+
+    return new Call(callee, paren, argumentsList);
+  }
+
+  private call(): Expr {
+    let expr = this.primary();
+
+    while (true) {
+      if (this.match(TokenType.LEFT_PAREN)) {
+        expr = this.finishCall(expr);
+      } else {
+        break;
+      }
+    }
+
+    return expr;
   }
 
   private primary(): Expr {

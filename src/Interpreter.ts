@@ -12,14 +12,27 @@ import {
   Assign,
   Visitor as ExprVisitor,
   Logical,
+  Call,
 } from "./Expr";
 import { Hezarfen } from "./Hezarfen";
+import { HezarfenCallable } from "./HezarfenCallable";
 import { RuntimeError } from "./RuntimeException";
 import { Block, Expression, If, Print, Stmt, Var, Visitor as StmtVisitor, While } from "./Stmt";
 import { Token, TokenLiteral } from "./Token";
 import { TokenType } from "./TokenType";
 
 type InterpreterVisitorType = TokenLiteral;
+
+function isHezarfenCallable(callee: any): callee is HezarfenCallable {
+  return (
+    callee.call &&
+    typeof callee.call === "function" &&
+    callee.arity &&
+    typeof callee.arity === "function" &&
+    callee.toString &&
+    typeof callee.toString === "function"
+  );
+}
 
 export class Interpreter implements ExprVisitor<TokenLiteral>, StmtVisitor<void> {
   private environment: Environment = new Environment();
@@ -154,6 +167,26 @@ export class Interpreter implements ExprVisitor<TokenLiteral>, StmtVisitor<void>
         return this.isEqual(left, right);
     }
     return null;
+  }
+
+  public visitCallExpr(expr: Call) {
+    const callee = this.evaluate(expr.callee);
+
+    const argumentsList = [];
+    for (const argument of expr.arguments) {
+      argumentsList.push(this.evaluate(argument));
+    }
+
+    if (!isHezarfenCallable(callee)) {
+      throw new RuntimeError(expr.paren, "Can only call functions and classes.");
+    }
+
+    const _function = callee;
+    if (argumentsList.length !== _function?.arity()) {
+      throw new RuntimeError(expr.paren, `Expected ${_function.arity()} arguments but got ${argumentsList.length}.`);
+    }
+
+    return _function.call(this, argumentsList);
   }
 
   private isEqual(a: InterpreterVisitorType, b: InterpreterVisitorType): boolean {
