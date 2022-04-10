@@ -1,25 +1,26 @@
 import chalk from "chalk";
 import { Assign, Binary, Call, Expr, Grouping, Literal, Logical, Ternary, Unary, Variable } from "./Expr";
 import { Hezarfen } from "./Hezarfen";
-import { Block, Expression, Func, If, Print, Stmt, Var, While } from "./Stmt";
+import { Block, Expression, Func, If, Print, Return, Stmt, Var, While } from "./Stmt";
 import { Token } from "./Token";
 import { TokenType } from "./TokenType";
 /* 
 GRAMMAR
 program       -> declaration * EOF
 declaration   -> funDecl | varDecl | statement;
-statement     -> exprStmt | ifStmt | printStmt | block | whileStmt | forStmt
+statement     -> exprStmt | ifStmt | printStmt | block | whileStmt | forStmt | returnStmt
 whileStmt     -> "while" "(" expression ")" statement;
 forStmt       -> "for" "(" ( varDecl | exprStmt | ";" ) expression? ";" expression? ")" statement ;
 ifStmt        -> "if" "(" expression ")" statement
                   ( "else" statement )?; 
+exprStmt      -> expression ";"
+printStmt     -> "print" expression
+returnStmt    -> "return" expression? ";";
 block         -> "{" declaration* "}"
 varDecl       -> "var" IDENTIFIER ( "=" expression )? ";"
 funDecl       -> "fun" function;
 function      -> IDENTIFIER "(" paramaters? ")" block;
 parameters    -> IDENTIFIER ( "," IDENTIFIER)*;
-exprStmt      -> expression ";"
-printStmt     -> "print" expression
 expression    -> assignment;
 assigment     -> IDENTIFIER "=" assignment | logic_or | series;
 logic_or      -> logic_and ( "or" logic_and )*;
@@ -104,6 +105,7 @@ export class Parser {
   private statement(): Stmt {
     if (this.match(TokenType.IF)) return this.ifStatement();
     if (this.match(TokenType.PRINT)) return this.printStatement();
+    if (this.match(TokenType.RETURN)) return this.returnStatement();
     if (this.match(TokenType.FOR)) return this.forStatement();
     if (this.match(TokenType.WHILE)) return this.whileStatement();
     if (this.match(TokenType.LEFT_BRACE)) return new Block(this.block());
@@ -162,6 +164,17 @@ export class Parser {
     const value: Expr = this.expression();
     this.consume(TokenType.SEMICOLON, "Expect ';' after value.");
     return new Print(value);
+  }
+
+  private returnStatement() {
+    const keyword = this.previous();
+    let value: Expr | null = null;
+    if (!this.check(TokenType.SEMICOLON)) {
+      value = this.expression();
+    }
+
+    this.consume(TokenType.SEMICOLON, "Expect ';' after return value.");
+    return new Return(keyword, value);
   }
 
   private ifStatement(): Stmt {

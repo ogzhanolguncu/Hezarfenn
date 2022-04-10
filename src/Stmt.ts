@@ -7,11 +7,12 @@ export interface Visitor<T> {
     visitFuncStmt: (Stmt: Func) => T;
     visitIfStmt: (Stmt: If) => T;
     visitPrintStmt: (Stmt: Print) => T;
+    visitReturnStmt: (Stmt: Return) => T;
     visitVarStmt: (Stmt: Var) => T;
     visitWhileStmt: (Stmt: While) => T;
 }
 
-export type Stmt = Block | Expression | Func | If | Print | Var | While;
+export type Stmt = Block | Expression | Func | If | Print | Return | Var | While;
 
 export class Block {
     public statements: Stmt[];
@@ -78,6 +79,20 @@ export class Print {
 
     public accept<T>(visitor: Visitor<T>): T {
         return visitor.visitPrintStmt(this);
+    }
+}
+
+export class Return {
+    public keyword: Token;
+    public value: Expr | null;
+
+    public constructor(keyword: Token, value: Expr | null) {
+        this.keyword = keyword;
+        this.value = value;
+    }
+
+    public accept<T>(visitor: Visitor<T>): T {
+        return visitor.visitReturnStmt(this);
     }
 }
 

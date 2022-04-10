@@ -17,12 +17,11 @@ import {
 import { Hezarfen } from "./Hezarfen";
 import { HezarfenCallable } from "./HezarfenCallable";
 import { HezarfenFunction } from "./HezarfenFunction";
+import { ReturnException } from "./ReturnException";
 import { RuntimeError } from "./RuntimeException";
-import { Block, Expression, Func, If, Print, Stmt, Var, Visitor as StmtVisitor, While } from "./Stmt";
+import { Block, Expression, Func, If, Print, Return, Stmt, Var, Visitor as StmtVisitor, While } from "./Stmt";
 import { Token, TokenLiteral } from "./Token";
 import { TokenType } from "./TokenType";
-
-type InterpreterVisitorType = TokenLiteral;
 
 function isHezarfenCallable(callee: any): callee is HezarfenCallable {
   return (
@@ -36,10 +35,13 @@ function isHezarfenCallable(callee: any): callee is HezarfenCallable {
 }
 
 export class Interpreter implements ExprVisitor<TokenLiteral>, StmtVisitor<void> {
-  public globals: Environment = new Environment();
-  private environment: Environment = this.globals;
+  public globals: Environment;
+  private environment: Environment;
 
   public constructor() {
+    this.globals = new Environment();
+    this.environment = this.globals;
+
     this.globals.define("clock", {
       arity(): number {
         return 0;
@@ -61,7 +63,7 @@ export class Interpreter implements ExprVisitor<TokenLiteral>, StmtVisitor<void>
     }
   }
 
-  private stringify(object: InterpreterVisitorType): string {
+  private stringify(object: TokenLiteral): string {
     if (object === null) return "nil";
 
     if (typeof object === "number") {
@@ -74,7 +76,7 @@ export class Interpreter implements ExprVisitor<TokenLiteral>, StmtVisitor<void>
     return object.toString();
   }
 
-  public visitLiteralExpr(expr: Literal): InterpreterVisitorType {
+  public visitLiteralExpr(expr: Literal): TokenLiteral {
     return expr.value;
   }
 
@@ -91,18 +93,18 @@ export class Interpreter implements ExprVisitor<TokenLiteral>, StmtVisitor<void>
     return this.evaluate(expr.right);
   }
 
-  public visitGroupingExpr(expr: Grouping): InterpreterVisitorType {
+  public visitGroupingExpr(expr: Grouping): TokenLiteral {
     return this.evaluate(expr.expression);
   }
 
-  public visitWhileStmt(stmt: While): InterpreterVisitorType {
+  public visitWhileStmt(stmt: While) {
     while (this.isTruthy(this.evaluate(stmt.condition))) {
       this.execute(stmt.body);
     }
     return null;
   }
 
-  public visitTernaryExpr(expr: Ternary): InterpreterVisitorType {
+  public visitTernaryExpr(expr: Ternary): TokenLiteral {
     const left = this.evaluate(expr.left);
     const middle = this.evaluate(expr.middle);
     const right = this.evaluate(expr.right);
@@ -114,7 +116,7 @@ export class Interpreter implements ExprVisitor<TokenLiteral>, StmtVisitor<void>
     }
   }
 
-  public visitUnaryExpr(expr: Unary): InterpreterVisitorType {
+  public visitUnaryExpr(expr: Unary): TokenLiteral {
     const right = this.evaluate(expr.right);
 
     switch (expr.operator.type) {
@@ -126,11 +128,11 @@ export class Interpreter implements ExprVisitor<TokenLiteral>, StmtVisitor<void>
     return null;
   }
 
-  public visitVariableExpr(expr: Variable): InterpreterVisitorType {
+  public visitVariableExpr(expr: Variable): TokenLiteral {
     return this.environment.get(expr.name);
   }
 
-  public visitBinaryExpr(expr: Binary): InterpreterVisitorType {
+  public visitBinaryExpr(expr: Binary): TokenLiteral {
     const left = this.evaluate(expr.left);
     const right = this.evaluate(expr.right);
 
@@ -203,14 +205,14 @@ export class Interpreter implements ExprVisitor<TokenLiteral>, StmtVisitor<void>
     return fn.call(this, args);
   }
 
-  private isEqual(a: InterpreterVisitorType, b: InterpreterVisitorType): boolean {
+  private isEqual(a: TokenLiteral, b: TokenLiteral): boolean {
     if (a === null && b === null) return true;
     if (a === null) return false;
 
     return Object.is(a, b);
   }
 
-  private isTruthy(object: InterpreterVisitorType) {
+  private isTruthy(object: TokenLiteral) {
     if (object === null) return false;
     if (typeof object === "boolean") return Boolean(object);
     return true;
@@ -230,7 +232,7 @@ export class Interpreter implements ExprVisitor<TokenLiteral>, StmtVisitor<void>
     throw new RuntimeError(operator, "Operands must be numbers.");
   }
 
-  private evaluate(expr: Expr): InterpreterVisitorType {
+  private evaluate(expr: Expr): TokenLiteral {
     return expr.accept(this);
   }
 
@@ -242,10 +244,11 @@ export class Interpreter implements ExprVisitor<TokenLiteral>, StmtVisitor<void>
     const previous = this.environment;
     try {
       this.environment = environment;
+
       for (const statement of statements) {
         this.execute(statement);
       }
-    } catch (error) {
+    } finally {
       this.environment = previous;
     }
   }
@@ -260,7 +263,7 @@ export class Interpreter implements ExprVisitor<TokenLiteral>, StmtVisitor<void>
     return null;
   }
   public visitFuncStmt(stmt: Func) {
-    const func = new HezarfenFunction(stmt);
+    const func = new HezarfenFunction(stmt, this.environment);
     this.environment.define(stmt.name.lexeme, func);
     return null;
   }
@@ -276,11 +279,15 @@ export class Interpreter implements ExprVisitor<TokenLiteral>, StmtVisitor<void>
 
   public visitPrintStmt(stmt: Print) {
     const value = this.evaluate(stmt.expression);
-    if (value === null) {
-      throw new RuntimeError({ ...(stmt.expression as unknown as Var).name }, "Variable has not been initialized yet.");
+    console.log(chalk.green(this.stringify(value !== null ? value.toString() : "nil")));
+  }
+
+  public visitReturnStmt(stmt: Return) {
+    let value: TokenLiteral = null;
+    if (stmt.value != null) {
+      value = this.evaluate(stmt.value);
     }
-    console.log(chalk.green(this.stringify(value)));
-    return null;
+    throw new ReturnException(value);
   }
 
   public visitVarStmt(stmt: Var) {
