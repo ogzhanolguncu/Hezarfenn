@@ -50,10 +50,14 @@ export class Interpreter implements ExprVisitor<TokenLiteral>, StmtVisitor<void>
       call(): TokenLiteral {
         return Date.now();
       },
+
+      toString() {
+        return "<native fn>";
+      },
     });
   }
 
-  interpreter(statements: Stmt[]): void {
+  interpret(statements: Stmt[]): void {
     try {
       for (const statement of statements) {
         this.execute(statement);
@@ -137,9 +141,6 @@ export class Interpreter implements ExprVisitor<TokenLiteral>, StmtVisitor<void>
     const right = this.evaluate(expr.right);
 
     switch (expr.operator.type) {
-      case TokenType.MINUS:
-        this.checkNumberOperand(expr.operator, right);
-        return -Number(right);
       case TokenType.MINUS:
         this.checkNumberOperands(expr.operator, left, right);
         return Number(left) - Number(right);
@@ -269,7 +270,7 @@ export class Interpreter implements ExprVisitor<TokenLiteral>, StmtVisitor<void>
   }
 
   public visitIfStmt(stmt: If) {
-    if (this.isTruthy(this.evaluate(stmt.conditition))) {
+    if (this.isTruthy(this.evaluate(stmt.condition))) {
       this.execute(stmt.thenBranch);
     } else if (stmt.elseBranch !== null) {
       this.execute(stmt.elseBranch);

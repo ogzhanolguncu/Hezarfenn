@@ -54,15 +54,14 @@ export class Hezarfen {
     const lexer = new Lexer(source);
     const tokens: Token[] = lexer.scanTokens();
     const parser = new Parser([...tokens]);
-    const statements: Stmt[] = parser.parse();
+    const statements: Stmt[] | null = parser.parse();
 
     if (this.hadError) return;
 
     if (statements === null) {
       console.log(chalk.redBright("Internal Error"));
     } else {
-      Hezarfen.interpreter.interpreter(statements);
-      // console.log(chalk.greenBright(new AstPrinter().print(expression)));
+      Hezarfen.interpreter.interpret(statements);
     }
   }
 

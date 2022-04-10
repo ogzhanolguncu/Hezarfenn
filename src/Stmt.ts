@@ -55,12 +55,12 @@ export class Func {
 }
 
 export class If {
-    public conditition: Expr;
+    public condition: Expr;
     public thenBranch: Stmt;
     public elseBranch: Stmt | null;
 
-    public constructor(conditition: Expr, thenBranch: Stmt, elseBranch: Stmt | null) {
-        this.conditition = conditition;
+    public constructor(condition: Expr, thenBranch: Stmt, elseBranch: Stmt | null) {
+        this.condition = condition;
         this.thenBranch = thenBranch;
         this.elseBranch = elseBranch;
     }

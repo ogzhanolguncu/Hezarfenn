@@ -4,4 +4,5 @@ import { TokenLiteral } from "./Token";
 export interface HezarfenCallable {
   arity(): number;
   call(interpreter: Interpreter, argumentList: TokenLiteral[]): TokenLiteral;
+  toString(): string;
 }
