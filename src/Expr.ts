@@ -47,12 +47,12 @@ export class Binary {
 export class Call {
     public callee: Expr;
     public paren: Token;
-    public arguments: Expr[];
+    public _arguments: Expr[];
 
-    public constructor(callee: Expr, paren: Token, arguments: Expr[]) {
+    public constructor(callee: Expr, paren: Token, _arguments: Expr[]) {
         this.callee = callee;
         this.paren = paren;
-        this.arguments = arguments;
+        this._arguments = _arguments;
     }
 
     public accept<T>(visitor: Visitor<T>): T {

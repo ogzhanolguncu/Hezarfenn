@@ -1,11 +1,12 @@
+import { HezarfenCallable } from "./HezarfenCallable";
 import { TokenType } from "./TokenType";
 
-export type TokenLiteral = string | number | boolean | null;
+export type TokenLiteral = string | number | boolean | null | HezarfenCallable;
 
 export class Token {
   type: TokenType;
   lexeme: string;
-  literal: TokenLiteral
+  literal: TokenLiteral;
   line: number;
 
   constructor(type: TokenType, lexeme: string, literal: TokenLiteral | null, line: number) {

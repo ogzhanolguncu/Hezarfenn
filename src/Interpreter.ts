@@ -16,8 +16,9 @@ import {
 } from "./Expr";
 import { Hezarfen } from "./Hezarfen";
 import { HezarfenCallable } from "./HezarfenCallable";
+import { HezarfenFunction } from "./HezarfenFunction";
 import { RuntimeError } from "./RuntimeException";
-import { Block, Expression, If, Print, Stmt, Var, Visitor as StmtVisitor, While } from "./Stmt";
+import { Block, Expression, Func, If, Print, Stmt, Var, Visitor as StmtVisitor, While } from "./Stmt";
 import { Token, TokenLiteral } from "./Token";
 import { TokenType } from "./TokenType";
 
@@ -35,7 +36,20 @@ function isHezarfenCallable(callee: any): callee is HezarfenCallable {
 }
 
 export class Interpreter implements ExprVisitor<TokenLiteral>, StmtVisitor<void> {
-  private environment: Environment = new Environment();
+  public globals: Environment = new Environment();
+  private environment: Environment = this.globals;
+
+  public constructor() {
+    this.globals.define("clock", {
+      arity(): number {
+        return 0;
+      },
+
+      call(): TokenLiteral {
+        return Date.now();
+      },
+    });
+  }
 
   interpreter(statements: Stmt[]): void {
     try {
@@ -172,21 +186,21 @@ export class Interpreter implements ExprVisitor<TokenLiteral>, StmtVisitor<void>
   public visitCallExpr(expr: Call) {
     const callee = this.evaluate(expr.callee);
 
-    const argumentsList = [];
-    for (const argument of expr.arguments) {
-      argumentsList.push(this.evaluate(argument));
+    const args = [];
+    for (const arg of expr._arguments) {
+      args.push(this.evaluate(arg));
     }
 
     if (!isHezarfenCallable(callee)) {
       throw new RuntimeError(expr.paren, "Can only call functions and classes.");
     }
 
-    const _function = callee;
-    if (argumentsList.length !== _function?.arity()) {
-      throw new RuntimeError(expr.paren, `Expected ${_function.arity()} arguments but got ${argumentsList.length}.`);
+    const fn = callee;
+    if (args.length != fn.arity()) {
+      throw new RuntimeError(expr.paren, `Expected ${fn.arity()} arguments but got ${args.length}.`);
     }
 
-    return _function.call(this, argumentsList);
+    return fn.call(this, args);
   }
 
   private isEqual(a: InterpreterVisitorType, b: InterpreterVisitorType): boolean {
@@ -224,7 +238,7 @@ export class Interpreter implements ExprVisitor<TokenLiteral>, StmtVisitor<void>
     stmt.accept(this);
   }
 
-  private executeBlock(statements: Stmt[], environment: Environment) {
+  public executeBlock(statements: Stmt[], environment: Environment) {
     const previous = this.environment;
     try {
       this.environment = environment;
@@ -243,6 +257,11 @@ export class Interpreter implements ExprVisitor<TokenLiteral>, StmtVisitor<void>
 
   public visitExpressionStmt(stmt: Expression) {
     this.evaluate(stmt.expression);
+    return null;
+  }
+  public visitFuncStmt(stmt: Func) {
+    const func = new HezarfenFunction(stmt);
+    this.environment.define(stmt.name.lexeme, func);
     return null;
   }
 
